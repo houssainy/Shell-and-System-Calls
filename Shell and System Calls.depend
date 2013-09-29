@@ -1,0 +1,7 @@
+# depslib dependency file v1.0
+1380487098 source:/home/houssainy/Desktop/MyWorkSpaces/C++/Shell and System Calls/main.cpp
+	<stdio.h>
+	<string.h>
+	<sys/types.h>
+	<unistd.h>
+
