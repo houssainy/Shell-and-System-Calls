@@ -1,8 +1,12 @@
 # depslib dependency file v1.0
-1380581050 source:/home/houssainy/Desktop/MyWorkSpaces/C++/Shell and System Calls/main.cpp
+1380616597 source:/home/houssainy/Desktop/MyWorkSpaces/C++/Shell and System Calls/main.cpp
 	<stdio.h>
 	<string.h>
+	<iostream>
 	<sys/types.h>
 	<unistd.h>
-	<iostream>
+	<sys/wait.h>
+	<stdlib.h>
+	<ios>
+	<fstream>
 

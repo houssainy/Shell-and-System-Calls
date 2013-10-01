@@ -10,6 +10,8 @@
 
 #include <stdlib.h> /* Error */
 
+
+
 #define EXIT 0x01
 #define NORMAL_PROCCESS 0x02
 #define BACKGROUND 0x03
@@ -17,7 +19,6 @@
 using namespace std;
 
 int parseCommand(string input , char **args){
-    int argPos = 0;
     int i = 0;
     string temp ;
 
@@ -31,32 +32,26 @@ int parseCommand(string input , char **args){
         if( temp== "exit" || temp == "EXIT")
             return EXIT;
 
-        strcpy(*args++, temp.c_str());
-        argPos++;
+        if( temp != ""){
+            strcpy((*args), temp.c_str());
+            args++;
+        }
     }
 
-    args[argPos] = NULL;
+    *args = NULL;
 
-    char c = args[argPos-1][sizeof(args[argPos-1])-2];
-    if(  c == '&')
+    args--;
+    temp = *args;
+    char c = temp[temp.size()-1];
+
+    if(  c == '&'){
+        (*args)[temp.size()-1] = '\0';
         return BACKGROUND;
-    else
+    }else
         return NORMAL_PROCCESS;
 
 }
-/**
-*   Method to start new process and execute command via execvp().
-**/
-void execute(char *args[]){
-    int status = 0;
-    int pid ; ;
-    if((pid = fork() ) < 0 ){
-        printf("***ERROR: error in process #%i",pid);
-        exit(EXIT_FAILURE);
-    }else if( pid == 0 ){
-        execvp(args[0],args);
-    }
-}
+
 
 /**
 * Wait until the child process terminated.
@@ -76,9 +71,28 @@ void wait_process(){
           printf("Child process did not end normally.n");
     }
 }
+
+/**
+*   Method to start new process and execute command via execvp().
+**/
+void execute(char *args[],int result){
+    int status = 0;
+    int pid ; ;
+    if((pid = fork() ) < 0 ){
+        printf("***ERROR: error in process #%i\n",pid);
+        exit(EXIT_FAILURE);
+    }else if( pid == 0 ){
+        execvp(args[0],args);
+    }else{
+        if( result == NORMAL_PROCCESS)
+            wait_process();
+    }
+}
+
 int  main(void){
 
     while(1){
+
         printf("%s:~$ ",get_current_dir_name());
 
         string input;
@@ -87,19 +101,13 @@ int  main(void){
         char* args[48];
         int result = parseCommand(input , args);
 
-        switch(result){
-            case BACKGROUND:
-                execute(args);
-                break;
-            case NORMAL_PROCCESS:
-                execute(args);
-                wait_process();
-                break;
-            case EXIT:
-                char *arr[] = {"exit",NULL};
-                execvp(arr[0],arr);
-                break;
-        }
+        if( result == EXIT ){
+            char *arr[] = {"exit",NULL};
+            execvp(arr[0],arr);
+        }else
+            execute(args,result);
+
+
     }
 
    return 0;
