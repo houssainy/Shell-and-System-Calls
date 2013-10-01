@@ -10,7 +10,8 @@
 
 #include <stdlib.h> /* Error */
 
-
+#include <ios>
+#include <fstream>
 
 #define EXIT 0x01
 #define NORMAL_PROCCESS 0x02
@@ -18,10 +19,15 @@
 
 using namespace std;
 
+FILE *logFile;
+
 int parseCommand(string input , char **args){
+    fputs("**LOG: Start Parsing.\n",logFile);
+
     int i = 0;
     string temp ;
 
+    int argsPos = 0;
     while( i < input.size() ){
         temp ="";
 
@@ -33,15 +39,16 @@ int parseCommand(string input , char **args){
             return EXIT;
 
         if( temp != ""){
-            strcpy((*args), temp.c_str());
-            args++;
+            args[argsPos] = new char[temp.size()];
+            strncpy(args[argsPos++], temp.c_str() , temp.size());
+            //args++;
         }
     }
 
-    *args = NULL;
+    args[argsPos] = NULL;
 
-    args--;
-    temp = *args;
+    //args--;
+    temp = args[argsPos-1];
     char c = temp[temp.size()-1];
 
     if(  c == '&'){
@@ -56,20 +63,38 @@ int parseCommand(string input , char **args){
 /**
 * Wait until the child process terminated.
 **/
-void wait_process(){
+void wait_process(int pid){
+
+    string temp = "**LOG: process ";
+    temp+= pid;
+    temp+= " is waiting.\n";
+
+    fputs("**LOG: Normal child process was terminated.\n",logFile);
+
     int status;
     if( wait(&status) == -1 ){
-         perror("***Error:");
+        temp = "**ERROR: Error while waiting "+status;
+        temp += "\n";
+
+        fputs(temp.c_str() ,logFile);
+        perror("***ERROR");
     }else{
-       if (WIFSIGNALED(status) != 0)
-          printf("Child process ended because of signal %d.n",
+
+        fputs(temp.c_str(),logFile);
+       /*if (WIFSIGNALED(status) != 0)
+          printf("Child process ended because of signal %d.n\n",
                   WTERMSIG(status));
        else if (WIFEXITED(status) != 0)
-          printf("Child process ended normally; status = %d.n",
+          printf("Child process ended normally; status = %d.n\n",
                   WEXITSTATUS(status));
        else
-          printf("Child process did not end normally.n");
+          printf("Child process did not end normally.n\n");*/
+
     }
+}
+
+void signal_handler(int iSignal){
+    fputs("Background child process was terminated.\n",logFile);
 }
 
 /**
@@ -77,38 +102,61 @@ void wait_process(){
 **/
 void execute(char *args[],int result){
     int status = 0;
-    int pid ; ;
+    int pid ;
+    string temp;
+
     if((pid = fork() ) < 0 ){
-        printf("***ERROR: error in process #%i\n",pid);
+        temp = "**ERROR: error in process "+pid;
+        fputs(temp.c_str(),logFile);
+
+        fclose(logFile);
         exit(EXIT_FAILURE);
     }else if( pid == 0 ){
-        execvp(args[0],args);
+        temp = "**LOG: start process "+pid;
+        fputs(temp.c_str(),logFile);
+        if(execvp(args[0],args) < 0)
+            printf("**ERROR: Undifined command\n");
     }else{
-        if( result == NORMAL_PROCCESS)
-            wait_process();
+        if( result == NORMAL_PROCCESS){
+            wait_process(pid);
+        }else{
+            signal(SIGCHLD, signal_handler);
+        }
     }
 }
 
 int  main(void){
+    logFile = fopen("logFile.txt","w");
+    fputs ("Log File:\n",logFile);
+
 
     while(1){
 
         printf("%s:~$ ",get_current_dir_name());
 
+        fputs("**LOG: Take input from user.\n",logFile);
         string input;
         getline(std::cin,input);
+
+        string temp = "**LOG: user input is "+input;
+        temp+="\n";
+        fputs(temp.c_str(),logFile);
 
         char* args[48];
         int result = parseCommand(input , args);
 
         if( result == EXIT ){
-            char *arr[] = {"exit",NULL};
-            execvp(arr[0],arr);
+            fputs("**LOG: Exit",logFile);
+            fclose(logFile);
+           // char *arr[] = {"exit",NULL};
+            //execvp(arr[0],arr);
+            exit(0);
         }else
             execute(args,result);
 
 
     }
 
+   fclose(logFile);
    return 0;
 }
