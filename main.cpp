@@ -116,6 +116,7 @@ void execute(char *args[],int result){
         fputs(temp.c_str(),logFile);
         if(execvp(args[0],args) < 0)
             printf("**ERROR: Undifined command\n");
+        exit(0);
     }else{
         if( result == NORMAL_PROCCESS){
             wait_process(pid);
